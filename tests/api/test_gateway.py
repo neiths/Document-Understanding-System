@@ -14,8 +14,7 @@ def test_health_check(client):
 def test_extract_document_image(client, sample_image):
     """Test document extraction with image"""
     response = client.post(
-        "/api/v1/extract",
-        files={"file": ("test.jpg", sample_image, "image/jpeg")}
+        "/api/v1/extract", files={"file": ("test.jpg", sample_image, "image/jpeg")}
     )
     assert response.status_code == 200
     data = response.json()
@@ -28,8 +27,7 @@ def test_extract_document_image(client, sample_image):
 def test_extract_document_pdf(client, sample_pdf):
     """Test document extraction with PDF"""
     response = client.post(
-        "/api/v1/extract",
-        files={"file": ("test.pdf", sample_pdf, "application/pdf")}
+        "/api/v1/extract", files={"file": ("test.pdf", sample_pdf, "application/pdf")}
     )
     assert response.status_code == 200
     data = response.json()
@@ -46,7 +44,7 @@ def test_extract_invalid_file_type(client):
     """Test extraction with invalid file type"""
     response = client.post(
         "/api/v1/extract",
-        files={"file": ("test.txt", b"invalid content", "text/plain")}
+        files={"file": ("test.txt", b"invalid content", "text/plain")},
     )
     assert response.status_code == 400
 
@@ -73,4 +71,6 @@ def test_metrics_endpoint(client):
     """Test metrics endpoint"""
     response = client.get("/metrics")
     assert response.status_code == 200
-    assert response.headers["content-type"] == "text/plain; version=0.0.4; charset=utf-8"
+    assert (
+        response.headers["content-type"] == "text/plain; version=0.0.4; charset=utf-8"
+    )

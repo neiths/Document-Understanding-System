@@ -7,6 +7,7 @@ import json
 import time
 from pathlib import Path
 
+
 class DocumentUnderstandingClient:
     """Client for interacting with the Document Understanding System API"""
 
@@ -17,12 +18,12 @@ class DocumentUnderstandingClient:
         """Extract text from a document"""
         url = f"{self.base_url}/api/v1/extract"
 
-        with open(file_path, 'rb') as f:
-            files = {'file': (Path(file_path).name, f)}
+        with open(file_path, "rb") as f:
+            files = {"file": (Path(file_path).name, f)}
             data = {}
 
             if document_type:
-                data['document_type'] = document_type
+                data["document_type"] = document_type
 
             response = requests.post(url, files=files, data=data)
 
@@ -67,7 +68,7 @@ def main():
     print("\n2. Getting available pipelines...")
     try:
         pipelines = client.get_pipelines()
-        for name, info in pipelines['pipelines'].items():
+        for name, info in pipelines["pipelines"].items():
             print(f"- {name}: {info['description']}")
     except Exception as e:
         print(f"Error: {e}")
@@ -76,7 +77,7 @@ def main():
     print("\n3. Getting available models...")
     try:
         models = client.list_models()
-        for model, versions in models['models'].items():
+        for model, versions in models["models"].items():
             print(f"- {model}: {', '.join(versions)}")
     except Exception as e:
         print(f"Error: {e}")
@@ -95,14 +96,16 @@ def main():
             print(f"Confidence: {result['confidence']:.2f}")
             print(f"Processing time: {result['processing_time']:.2f}s")
 
-            if result['success']:
-                data = result['data']
+            if result["success"]:
+                data = result["data"]
                 print(f"\nDocument type: {data.get('document_type', 'unknown')}")
-                if 'extracted_text' in data:
-                    print(f"Extracted text (first 200 chars): {data['extracted_text'][:200]}...")
-                if 'key_value_pairs' in data:
+                if "extracted_text" in data:
+                    print(
+                        f"Extracted text (first 200 chars): {data['extracted_text'][:200]}..."
+                    )
+                if "key_value_pairs" in data:
                     print("Key-value pairs:")
-                    for key, value in data['key_value_pairs'].items():
+                    for key, value in data["key_value_pairs"].items():
                         print(f"  {key}: {value}")
         except Exception as e:
             print(f"Error processing document: {e}")
@@ -119,11 +122,7 @@ def batch_processing_example():
     client = DocumentUnderstandingClient()
 
     # Example document list
-    documents = [
-        "document1.pdf",
-        "document2.jpg",
-        "document3.png"
-    ]
+    documents = ["document1.pdf", "document2.jpg", "document3.png"]
 
     results = []
 
@@ -132,29 +131,31 @@ def batch_processing_example():
             print(f"Processing {doc_path}...")
             try:
                 result = client.extract_document(doc_path)
-                results.append({
-                    'file': doc_path,
-                    'success': result['success'],
-                    'pipeline': result['pipeline_used'],
-                    'confidence': result['confidence']
-                })
+                results.append(
+                    {
+                        "file": doc_path,
+                        "success": result["success"],
+                        "pipeline": result["pipeline_used"],
+                        "confidence": result["confidence"],
+                    }
+                )
             except Exception as e:
-                results.append({
-                    'file': doc_path,
-                    'success': False,
-                    'error': str(e)
-                })
+                results.append({"file": doc_path, "success": False, "error": str(e)})
 
     # Summary
     print("\nBatch processing summary:")
-    successful = sum(1 for r in results if r['success'])
+    successful = sum(1 for r in results if r["success"])
     print(f"Successfully processed: {successful}/{len(results)}")
 
     for result in results:
-        if result['success']:
-            print(f"  {result['file']}: {result['pipeline']} (confidence: {result['confidence']:.2f})")
+        if result["success"]:
+            print(
+                f"  {result['file']}: {result['pipeline']} (confidence: {result['confidence']:.2f})"
+            )
         else:
-            print(f"  {result['file']}: Failed - {result.get('error', 'Unknown error')}")
+            print(
+                f"  {result['file']}: Failed - {result.get('error', 'Unknown error')}"
+            )
 
 
 def webhook_example():
@@ -168,14 +169,13 @@ def webhook_example():
     data = {
         "file": "document.pdf",
         "webhook_url": webhook_url,
-        "metadata": {
-            "user_id": "123",
-            "priority": "normal"
-        }
+        "metadata": {"user_id": "123", "priority": "normal"},
     }
 
     print(f"Setting up webhook at: {webhook_url}")
-    print("The system will send a POST request to this URL when processing is complete.")
+    print(
+        "The system will send a POST request to this URL when processing is complete."
+    )
 
 
 if __name__ == "__main__":

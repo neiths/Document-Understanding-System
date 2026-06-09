@@ -19,7 +19,7 @@ class DocumentRouter:
         self,
         mlflow_client: MLflowClient,
         minio_client: MinIOClient,
-        config: Dict[str, Any]
+        config: Dict[str, Any],
     ):
         self.mlflow_client = mlflow_client
         self.minio_client = minio_client
@@ -39,7 +39,9 @@ class DocumentRouter:
             classification = await self.document_classifier.classify(request.file_path)
 
             # Determine pipeline based on classification
-            pipeline_type = self._determine_pipeline(classification, request.document_type)
+            pipeline_type = self._determine_pipeline(
+                classification, request.document_type
+            )
 
             logger.info(f"Routing {request.file_path} to {pipeline_type} pipeline")
 
@@ -51,25 +53,23 @@ class DocumentRouter:
 
             # Add classification metadata
             if result.data:
-                result.data.update({
-                    "classification": classification.model_dump(),
-                    "pipeline_used": pipeline_type
-                })
+                result.data.update(
+                    {
+                        "classification": classification.model_dump(),
+                        "pipeline_used": pipeline_type,
+                    }
+                )
 
             return result
 
         except Exception as e:
             logger.error(f"Error routing document: {str(e)}")
             return ExtractionResponse(
-                success=False,
-                error=str(e),
-                pipeline_used="unknown"
+                success=False, error=str(e), pipeline_used="unknown"
             )
 
     def _determine_pipeline(
-        self,
-        classification,
-        user_requested_type: Optional[DocumentType]
+        self, classification, user_requested_type: Optional[DocumentType]
     ) -> str:
         """Determine which pipeline to use based on classification"""
         # If user specifies a type, respect it
@@ -98,23 +98,23 @@ class DocumentClassifier:
             DocumentType.FORM: {
                 "keywords": ["form", "application", "registration"],
                 "structure_indicators": ["table", "grid", "checkbox", "input"],
-                "confidence": 0.8
+                "confidence": 0.8,
             },
             DocumentType.RECEIPT: {
                 "keywords": ["receipt", "purchase", "transaction", "payment", "store"],
                 "structure_indicators": ["total", "date", "item", "price", "quantity"],
-                "confidence": 0.9
+                "confidence": 0.9,
             },
             DocumentType.STANDARD: {
                 "keywords": ["document", "letter", "report", "memo"],
                 "structure_indicators": ["paragraph", "heading", "bullet"],
-                "confidence": 0.7
+                "confidence": 0.7,
             },
             DocumentType.COMPLEX: {
                 "keywords": ["manual", "catalog", "magazine", "brochure"],
                 "structure_indicators": ["image", "multi-column", "irregular"],
-                "confidence": 0.6
-            }
+                "confidence": 0.6,
+            },
         }
 
     async def classify(self, file_path: str) -> Dict[str, Any]:
@@ -144,7 +144,7 @@ class DocumentClassifier:
                 "document_type": best_type,
                 "confidence": confidence,
                 "scores": scores,
-                "file_info": file_info
+                "file_info": file_info,
             }
 
         except Exception as e:
@@ -154,7 +154,7 @@ class DocumentClassifier:
                 "confidence": 0.1,
                 "scores": {},
                 "file_info": {},
-                "error": str(e)
+                "error": str(e),
             }
 
     def _analyze_file(self, file_path: str) -> Dict[str, Any]:
@@ -167,14 +167,17 @@ class DocumentClassifier:
         return {
             "size": stat.st_size,
             "extension": path.suffix.lower(),
-            "pages": self._count_pages(file_path) if path.suffix.lower() == '.pdf' else 1
+            "pages": self._count_pages(file_path)
+            if path.suffix.lower() == ".pdf"
+            else 1,
         }
 
     def _count_pages(self, pdf_path: str) -> int:
         """Count pages in PDF"""
         try:
             import PyPDF2
-            with open(pdf_path, 'rb') as file:
+
+            with open(pdf_path, "rb") as file:
                 reader = PyPDF2.PdfReader(file)
                 return len(reader.pages)
         except:
@@ -184,16 +187,14 @@ class DocumentClassifier:
         """Extract text sample from file"""
         try:
             from ..common.utils import perform_ocr
-            result = perform_ocr(file_path, lang='eng')
-            return result['text'].lower()
+
+            result = perform_ocr(file_path, lang="eng")
+            return result["text"].lower()
         except:
             return ""
 
     def _calculate_score(
-        self,
-        text: str,
-        patterns: Dict[str, Any],
-        file_info: Dict[str, Any]
+        self, text: str, patterns: Dict[str, Any], file_info: Dict[str, Any]
     ) -> float:
         """Calculate classification score"""
         score = 0.0
@@ -212,7 +213,7 @@ class DocumentClassifier:
         if file_info.get("pages", 1) > 10:
             score += 0.1  # Multi-page documents more likely complex
 
-        if file_info.get("extension") == '.pdf':
+        if file_info.get("extension") == ".pdf":
             score += 0.1  # PDFs tend to be more structured
 
         # Normalize score

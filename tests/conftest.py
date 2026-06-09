@@ -25,9 +25,9 @@ def sample_image():
     import io
 
     # Create a simple test image
-    image = Image.new('RGB', (100, 100), color='white')
+    image = Image.new("RGB", (100, 100), color="white")
     image_bytes = io.BytesIO()
-    image.save(image_bytes, format='JPEG')
+    image.save(image_bytes, format="JPEG")
     image_bytes.seek(0)
 
     return image_bytes

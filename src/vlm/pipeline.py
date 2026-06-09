@@ -1,7 +1,7 @@
 import time
 import json
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from pathlib import Path
 import os
 from PIL import Image
@@ -30,7 +30,7 @@ class VLMPipeline:
             "form": self._get_form_prompt(),
             "standard": self._get_standard_prompt(),
             "complex": self._get_complex_prompt(),
-            "unstructured": self._get_unstructured_prompt()
+            "unstructured": self._get_unstructured_prompt(),
         }
 
     @measure_time
@@ -50,9 +50,7 @@ class VLMPipeline:
 
             # Process with VLM
             vlm_response = await self.vlm_client.process_image(
-                image=image,
-                prompt=prompt,
-                document_type=doc_type
+                image=image, prompt=prompt, document_type=doc_type
             )
 
             # Parse structured response
@@ -70,8 +68,8 @@ class VLMPipeline:
                 "metadata": {
                     "model_used": vlm_response.get("model", "qwen2.5-vl"),
                     "tokens_used": vlm_response.get("tokens_used", 0),
-                    "processing_time": vlm_response.get("processing_time", 0)
-                }
+                    "processing_time": vlm_response.get("processing_time", 0),
+                },
             }
 
             # Log metrics to MLflow
@@ -79,14 +77,10 @@ class VLMPipeline:
                 "vlm_pipeline_confidence": confidence,
                 "response_length": len(vlm_response.get("extracted_text", "")),
                 "structured_fields": len(structured_data),
-                "entities_count": len(self._extract_entities(vlm_response))
+                "entities_count": len(self._extract_entities(vlm_response)),
             }
 
-            self.mlflow_client.log_model_metrics(
-                "vlm_pipeline",
-                metrics,
-                None
-            )
+            self.mlflow_client.log_model_metrics("vlm_pipeline", metrics, None)
 
             logger.info(f"VLM processing completed with confidence {confidence:.2f}")
 
@@ -94,16 +88,12 @@ class VLMPipeline:
                 success=True,
                 data=response_data,
                 pipeline_used="vlm",
-                confidence=confidence
+                confidence=confidence,
             )
 
         except Exception as e:
             logger.error(f"Error in VLM pipeline: {str(e)}")
-            return ExtractionResponse(
-                success=False,
-                error=str(e),
-                pipeline_used="vlm"
-            )
+            return ExtractionResponse(success=False, error=str(e), pipeline_used="vlm")
 
     def _parse_vlm_response(self, vlm_response: Dict[str, Any]) -> Dict[str, Any]:
         """Parse VLM response into structured format"""
@@ -112,7 +102,8 @@ class VLMPipeline:
             if "json" in str(vlm_response).lower():
                 # Find JSON in response
                 import re
-                json_match = re.search(r'\{[\s\S]*\}', str(vlm_response))
+
+                json_match = re.search(r"\{[\s\S]*\}", str(vlm_response))
                 if json_match:
                     return json.loads(json_match.group())
 
@@ -132,23 +123,25 @@ class VLMPipeline:
         import re
 
         # Key-value pairs
-        kv_pairs = re.findall(r'([^:]+):\s*(.+)', text)
+        kv_pairs = re.findall(r"([^:]+):\s*(.+)", text)
         for key, value in kv_pairs:
             structured[key.strip().lower()] = value.strip()
 
         # Bullet points
-        bullets = re.findall(r'^\s*[-*]\s*(.+)$', text, re.MULTILINE)
+        bullets = re.findall(r"^\s*[-*]\s*(.+)$", text, re.MULTILINE)
         if bullets:
             structured["items"] = bullets
 
         # Paragraphs
-        paragraphs = re.split(r'\n\s*\n', text)
+        paragraphs = re.split(r"\n\s*\n", text)
         if paragraphs:
             structured["content"] = [p.strip() for p in paragraphs if p.strip()]
 
         return structured
 
-    def _calculate_confidence(self, vlm_response: Dict[str, Any], structured_data: Dict[str, Any]) -> float:
+    def _calculate_confidence(
+        self, vlm_response: Dict[str, Any], structured_data: Dict[str, Any]
+    ) -> float:
         """Calculate confidence score for VLM response"""
         base_confidence = 0.5  # Base confidence
 
@@ -171,41 +164,28 @@ class VLMPipeline:
 
         # Email
         import re
-        email_matches = re.findall(r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})', text)
+
+        email_matches = re.findall(
+            r"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})", text
+        )
         for email in email_matches:
-            entities.append({
-                "type": "email",
-                "text": email,
-                "confidence": 0.9
-            })
+            entities.append({"type": "email", "text": email, "confidence": 0.9})
 
         # Phone numbers
-        phone_matches = re.findall(r'(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})', text)
+        phone_matches = re.findall(r"(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})", text)
         for phone in phone_matches:
-            entities.append({
-                "type": "phone",
-                "text": phone,
-                "confidence": 0.9
-            })
+            entities.append({"type": "phone", "text": phone, "confidence": 0.9})
 
         # Dates
-        date_matches = re.findall(r'(\d{1,2}[\/\-\s]\d{1,2}[\/\-\s]\d{2,4})', text)
+        date_matches = re.findall(r"(\d{1,2}[\/\-\s]\d{1,2}[\/\-\s]\d{2,4})", text)
         for date in date_matches:
-            entities.append({
-                "type": "date",
-                "text": date,
-                "confidence": 0.8
-            })
+            entities.append({"type": "date", "text": date, "confidence": 0.8})
 
         # Numbers
-        number_matches = re.findall(r'\$?(\d+\.?\d*)', text)
+        number_matches = re.findall(r"\$?(\d+\.?\d*)", text)
         for number in number_matches:
             if len(number) < 10:  # Avoid long sequences
-                entities.append({
-                    "type": "number",
-                    "text": number,
-                    "confidence": 0.7
-                })
+                entities.append({"type": "number", "text": number, "confidence": 0.7})
 
         return entities
 
