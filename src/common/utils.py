@@ -11,8 +11,7 @@ import hashlib
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -20,13 +19,14 @@ logger = logging.getLogger(__name__)
 def setup_logging():
     """Configure structured logging with Loguru"""
     from loguru import logger
+
     logger.remove()  # Remove default handler
 
     # Console logger
     logger.add(
         lambda msg: print(msg, end=""),
         format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {name}:{function}:{line} | {message}",
-        level="INFO"
+        level="INFO",
     )
 
     # File logger
@@ -35,7 +35,7 @@ def setup_logging():
         rotation="1 day",
         retention="30 days",
         format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {name}:{function}:{line} | {message}",
-        level="INFO"
+        level="INFO",
     )
 
     return logger
@@ -71,10 +71,7 @@ def convert_pdf_to_images(pdf_path: str, dpi: int = 300) -> list:
     """Convert PDF pages to images"""
     try:
         images = pdf2image.convert_from_path(
-            pdf_path,
-            dpi=dpi,
-            fmt='jpeg',
-            thread_count=4
+            pdf_path, dpi=dpi, fmt="jpeg", thread_count=4
         )
         return images
     except Exception as e:
@@ -82,7 +79,7 @@ def convert_pdf_to_images(pdf_path: str, dpi: int = 300) -> list:
         raise HTTPException(status_code=500, detail="Could not convert PDF to images")
 
 
-def perform_ocr(image_path: str, lang: str = 'eng') -> Dict[str, Any]:
+def perform_ocr(image_path: str, lang: str = "eng") -> Dict[str, Any]:
     """Perform OCR on an image"""
     try:
         # Open image
@@ -90,26 +87,30 @@ def perform_ocr(image_path: str, lang: str = 'eng') -> Dict[str, Any]:
 
         # Perform OCR
         text = pytesseract.image_to_string(image, lang=lang)
-        data = pytesseract.image_to_data(image, lang=lang, output_type=pytesseract.Output.DICT)
+        data = pytesseract.image_to_data(
+            image, lang=lang, output_type=pytesseract.Output.DICT
+        )
 
         # Extract bounding boxes and text
         boxes = []
-        for i in range(len(data['text'])):
-            if int(data['conf'][i]) > 0:  # Only include confident detections
+        for i in range(len(data["text"])):
+            if int(data["conf"][i]) > 0:  # Only include confident detections
                 box = {
-                    'x': data['left'][i],
-                    'y': data['top'][i],
-                    'width': data['width'][i],
-                    'height': data['height'][i],
-                    'text': data['text'][i],
-                    'confidence': int(data['conf'][i])
+                    "x": data["left"][i],
+                    "y": data["top"][i],
+                    "width": data["width"][i],
+                    "height": data["height"][i],
+                    "text": data["text"][i],
+                    "confidence": int(data["conf"][i]),
                 }
                 boxes.append(box)
 
         return {
-            'text': text,
-            'boxes': boxes,
-            'average_confidence': sum(box['confidence'] for box in boxes) / len(boxes) if boxes else 0
+            "text": text,
+            "boxes": boxes,
+            "average_confidence": sum(box["confidence"] for box in boxes) / len(boxes)
+            if boxes
+            else 0,
         }
     except Exception as e:
         logger.error(f"Error performing OCR: {str(e)}")
@@ -122,16 +123,17 @@ def get_file_info(file_path: str) -> Dict[str, Any]:
     stat = path.stat()
 
     return {
-        'name': path.name,
-        'size': stat.st_size,
-        'extension': path.suffix.lower(),
-        'created_time': stat.st_ctime,
-        'modified_time': stat.st_mtime
+        "name": path.name,
+        "size": stat.st_size,
+        "extension": path.suffix.lower(),
+        "created_time": stat.st_ctime,
+        "modified_time": stat.st_mtime,
     }
 
 
 def measure_time(func):
     """Decorator to measure function execution time"""
+
     def wrapper(*args, **kwargs):
         start_time = time.time()
         result = func(*args, **kwargs)
@@ -142,9 +144,10 @@ def measure_time(func):
 
         # Add execution time to result if it's a dict
         if isinstance(result, dict):
-            result['execution_time'] = execution_time
+            result["execution_time"] = execution_time
 
         return result
+
     return wrapper
 
 

@@ -21,23 +21,23 @@ class Settings(BaseSettings):
         "layout_detection": {
             "model_name": "DocLayout-YOLO",
             "version": "v1.0",
-            "confidence_threshold": 0.8
+            "confidence_threshold": 0.8,
         },
         "text_detection": {
             "model_name": "DBNet",
             "version": "v1.0",
-            "confidence_threshold": 0.7
+            "confidence_threshold": 0.7,
         },
         "text_recognition": {
             "model_name": "PARSeq",
             "version": "v1.0",
-            "confidence_threshold": 0.8
+            "confidence_threshold": 0.8,
         },
         "kie": {
             "model_name": "LayoutLMv3",
             "version": "v1.0",
-            "confidence_threshold": 0.75
-        }
+            "confidence_threshold": 0.75,
+        },
     }
 
     vlm_models = {
@@ -45,7 +45,7 @@ class Settings(BaseSettings):
             "model_name": "qwen2.5-vl-7b",
             "version": "v1.0",
             "max_tokens": 4096,
-            "temperature": 0.1
+            "temperature": 0.1,
         }
     }
 
@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     routing_config = {
         "confidence_threshold": 0.7,
         "use_ocr_for": ["standard", "form", "receipt"],
-        "use_vlm_for": ["complex", "unstructured", "multi-page"]
+        "use_vlm_for": ["complex", "unstructured", "multi-page"],
     }
 
     # Monitoring Configuration

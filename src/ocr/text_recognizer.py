@@ -38,7 +38,9 @@ class TextRecognizer:
             logger.error(f"Error loading text recognizer: {str(e)}")
             self.model = None
 
-    async def recognize(self, image_path: str, bbox: Dict[str, Any]) -> TextRecognitionResult:
+    async def recognize(
+        self, image_path: str, bbox: Dict[str, Any]
+    ) -> TextRecognitionResult:
         """Recognize text within bounding box"""
         try:
             # Load image
@@ -55,19 +57,11 @@ class TextRecognizer:
                 # Fallback to pytesseract
                 text, confidence = self._tesseract_recognize(cropped_image)
 
-            return TextRecognitionResult(
-                text=text,
-                confidence=confidence,
-                bbox=bbox
-            )
+            return TextRecognitionResult(text=text, confidence=confidence, bbox=bbox)
 
         except Exception as e:
             logger.error(f"Error in text recognition: {str(e)}")
-            return TextRecognitionResult(
-                text="",
-                confidence=0,
-                bbox=bbox
-            )
+            return TextRecognitionResult(text="", confidence=0, bbox=bbox)
 
     def _parsq_recognize(self, image: Image.Image) -> tuple:
         """Text recognition using PARSeq (placeholder)"""
@@ -80,21 +74,25 @@ class TextRecognizer:
         import pytesseract
 
         # Configure pytesseract
-        config = '--oem 3 --psm 6'
+        config = "--oem 3 --psm 6"
 
         # Get text
         text = pytesseract.image_to_string(image, config=config)
 
         # Get data for confidence
-        data = pytesseract.image_to_data(image, config=config, output_type=pytesseract.Output.DICT)
+        data = pytesseract.image_to_data(
+            image, config=config, output_type=pytesseract.Output.DICT
+        )
 
         # Calculate average confidence
-        confidences = [int(conf) for conf in data['conf'] if int(conf) > 0]
+        confidences = [int(conf) for conf in data["conf"] if int(conf) > 0]
         avg_confidence = sum(confidences) / len(confidences) if confidences else 0
 
         return text.strip(), avg_confidence / 100  # Convert to 0-1
 
-    async def recognize_batch(self, image_path: str, bboxes: List[Dict[str, Any]]) -> List[TextRecognitionResult]:
+    async def recognize_batch(
+        self, image_path: str, bboxes: List[Dict[str, Any]]
+    ) -> List[TextRecognitionResult]:
         """Recognize text for multiple bounding boxes"""
         results = []
 

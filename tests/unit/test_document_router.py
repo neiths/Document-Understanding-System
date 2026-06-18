@@ -1,3 +1,5 @@
+import os
+import tempfile
 import pytest
 from unittest.mock import Mock, patch
 from pathlib import Path
@@ -20,7 +22,7 @@ def document_router(mock_mlflow_client, mock_minio_client):
     return DocumentRouter(
         mlflow_client=mock_mlflow_client,
         minio_client=mock_minio_client,
-        config={"confidence_threshold": 0.7}
+        config={"confidence_threshold": 0.7},
     )
 
 
@@ -42,15 +44,13 @@ def test_determine_route_with_user_preference(document_router):
 
     # User prefers OCR
     pipeline = document_router._determine_pipeline(
-        Mock(document_type=DocumentType.STANDARD),
-        DocumentType.STANDARD
+        Mock(document_type=DocumentType.STANDARD), DocumentType.STANDARD
     )
     assert pipeline == "ocr"
 
     # User prefers VLM
     pipeline = document_router._determine_pipeline(
-        Mock(document_type=DocumentType.COMPLEX),
-        DocumentType.COMPLEX
+        Mock(document_type=DocumentType.COMPLEX), DocumentType.COMPLEX
     )
     assert pipeline == "vlm"
 
@@ -75,11 +75,9 @@ async def test_route_and_process_success(document_router, sample_image):
     from src.common.models import ExtractionRequest
 
     # Mock successful processing from both pipelines
-    document_router.ocr_pipeline.process = Mock(return_value=Mock(
-        success=True,
-        pipeline_used="ocr",
-        confidence=0.8
-    ))
+    document_router.ocr_pipeline.process = Mock(
+        return_value=Mock(success=True, pipeline_used="ocr", confidence=0.8)
+    )
 
     request = ExtractionRequest(file_path="test.jpg")
     result = await document_router.route_and_process(request)
@@ -115,7 +113,7 @@ def test_document_classifier_initialization(document_classifier):
 async def test_classify_document_form(document_classifier):
     """Test document classification for form"""
     # Create a mock image path
-    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
         tmp.write(b"fake image content")
         tmp_path = tmp.name
 
@@ -134,9 +132,10 @@ async def test_classify_document_form(document_classifier):
 
 def test_analyze_file(document_classifier):
     """Test file analysis"""
-    with tempfile.NamedTemporaryFile(suffix='.pdf') as tmp:
+    with tempfile.NamedTemporaryFile(suffix=".pdf") as tmp:
         # Create a minimal PDF
         from PyPDF2 import PdfWriter
+
         writer = PdfWriter()
         writer.add_blank_page(612, 792)
         writer.write(tmp)
@@ -152,16 +151,13 @@ def test_analyze_file(document_classifier):
 
 def test_extract_text_sample(document_classifier):
     """Test text sample extraction"""
-    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
         tmp.write(b"fake image content")
         tmp_path = tmp.name
 
     try:
-        with patch('src.router.document_router.perform_ocr') as mock_ocr:
-            mock_ocr.return_value = {
-                'text': 'Test document text',
-                'boxes': []
-            }
+        with patch("src.router.document_router.perform_ocr") as mock_ocr:
+            mock_ocr.return_value = {"text": "Test document text", "boxes": []}
 
             result = document_classifier._extract_text_sample(tmp_path)
             assert result == "test document text"

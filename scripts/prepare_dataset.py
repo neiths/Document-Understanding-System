@@ -18,7 +18,7 @@ DATASET_CONFIGS = {
         "url": "https://github.com/SmilesChang/SROIE2019",
         "download_script": "scripts/download_sroie.py",
         "training_format": "icdar",
-        "classes": ["company", "date", "address", "total", "other"]
+        "classes": ["company", "date", "address", "total", "other"],
     },
     "funsd": {
         "name": "FUNSD (Forms)",
@@ -26,7 +26,7 @@ DATASET_CONFIGS = {
         "url": "https://github.com/DS4SD/ FUNSD",
         "download_script": "scripts/download_funsd.py",
         "training_format": "layoutlm",
-        "classes": ["question", "answer", "header", "other"]
+        "classes": ["question", "answer", "header", "other"],
     },
     "cord": {
         "name": "CORD (Complex Documents)",
@@ -34,9 +34,10 @@ DATASET_CONFIGS = {
         "url": "https://github.com/clovaai/cord",
         "download_script": "scripts/download_cord.py",
         "training_format": "layoutlm",
-        "classes": ["company", "date", "address", "items", "total", "payment", "other"]
-    }
+        "classes": ["company", "date", "address", "items", "total", "payment", "other"],
+    },
 }
+
 
 class DatasetPreparer:
     def __init__(self, data_dir: str = "data"):
@@ -126,7 +127,9 @@ class DatasetPreparer:
         annotations_dir = dataset_path / "annotations"
         self._convert_to_icdar_format(annotations_dir, output_dir / "annotations")
 
-    def _process_layoutlm_file(self, img_file: Path, annotations_dir: Path, output_dir: Path):
+    def _process_layoutlm_file(
+        self, img_file: Path, annotations_dir: Path, output_dir: Path
+    ):
         """Process a single file for LayoutLM format"""
         # Load image
         image = Image.open(img_file)
@@ -139,7 +142,7 @@ class DatasetPreparer:
             return
 
         # Load annotation
-        with open(json_file, 'r') as f:
+        with open(json_file, "r") as f:
             annotation = json.load(f)
 
         # Create LayoutLM format
@@ -149,7 +152,7 @@ class DatasetPreparer:
             "width": width,
             "bboxes": [],
             "labels": [],
-            "words": []
+            "words": [],
         }
 
         # Process each word
@@ -162,7 +165,7 @@ class DatasetPreparer:
                 bbox[0] / width,
                 bbox[1] / height,
                 bbox[2] / width,
-                bbox[3] / height
+                bbox[3] / height,
             ]
 
             layoutlm_data["bboxes"].append(norm_bbox)
@@ -171,7 +174,7 @@ class DatasetPreparer:
 
         # Save
         output_file = output_dir / f"{img_file.stem}.json"
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             json.dump(layoutlm_data, f, indent=2)
 
     def _convert_to_icdar_format(self, annotations_dir: Path, output_dir: Path):
@@ -180,26 +183,23 @@ class DatasetPreparer:
 
         # Process each annotation file
         for json_file in annotations_dir.glob("*.json"):
-            with open(json_file, 'r') as f:
+            with open(json_file, "r") as f:
                 annotation = json.load(f)
 
-            # Convert to ICDAR format
+                # Convert to ICDAR format
                 icdar_data = []
             for item in annotation.get("form", []):
                 bbox = item["box"]
                 text = item.get("text", "")
 
-                icdar_data.append({
-                    "text": text,
-                    "bbox": bbox
-                })
+                icdar_data.append({"text": text, "bbox": bbox})
 
             # Save
             output_file = output_dir / f"{json_file.stem}.txt"
-            with open(output_file, 'w') as f:
+            with open(output_file, "w") as f:
                 for item in icdar_data:
                     f.write(f"{item['text']}\t")
-                    f.write(",".join(map(str, item['bbox'])) + "\n")
+                    f.write(",".join(map(str, item["bbox"])) + "\n")
 
     def _create_dataset_info(self, output_dir: Path, train_count: int, val_count: int):
         """Create dataset info file"""
@@ -209,16 +209,24 @@ class DatasetPreparer:
             "train_count": train_count,
             "val_count": val_count,
             "classes": DATASET_CONFIGS[output_dir.parent.name]["classes"],
-            "format": "layoutlm"
+            "format": "layoutlm",
         }
 
-        with open(output_dir / "dataset_info.json", 'w') as f:
+        with open(output_dir / "dataset_info.json", "w") as f:
             json.dump(info, f, indent=2)
+
 
 def main():
     parser = argparse.ArgumentParser(description="Prepare datasets for model training")
-    parser.add_argument("dataset", choices=list(DATASET_CONFIGS.keys()), help="Dataset to prepare")
-    parser.add_argument("--format", default="layoutlm", choices=["layoutlm", "icdar"], help="Output format")
+    parser.add_argument(
+        "dataset", choices=list(DATASET_CONFIGS.keys()), help="Dataset to prepare"
+    )
+    parser.add_argument(
+        "--format",
+        default="layoutlm",
+        choices=["layoutlm", "icdar"],
+        help="Output format",
+    )
     parser.add_argument("--data-dir", default="data", help="Data directory")
 
     args = parser.parse_args()
@@ -228,6 +236,7 @@ def main():
 
     # Prepare dataset
     preparer.prepare_dataset(args.dataset, args.format)
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

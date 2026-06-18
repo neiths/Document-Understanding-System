@@ -27,19 +27,16 @@ class KIEExtractor:
                 "date": r"(?:date|transaction\s*date)\s*[:\-]?\s*(\d{1,2}[\/\-\s]\d{1,2}[\/\-\s]\d{2,4})",
                 "items": r"(.+?)\s*\$\s*(\d+\.?\d*)",
                 "store": r"(?:store|retailer|vendor)[\s\-:]?\s*(.+)",
-                "payment": r"(?:payment|method|card)[\s\-:]?\s*(.+)"
+                "payment": r"(?:payment|method|card)[\s\-:]?\s*(.+)",
             },
             "form": {
                 "name": r"name\s*[:\-]?\s*(.+)",
                 "address": r"address\s*[:\-]?\s*(.+)",
                 "email": r"email\s*[:\-]?\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})",
                 "phone": r"phone\s*[:\-]?\s*(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})",
-                "id": r"(?:id|identification|license)[\s\-:]?\s*(.+)"
+                "id": r"(?:id|identification|license)[\s\-:]?\s*(.+)",
             },
-            "standard": {
-                "title": r"^(.+)$",
-                "sections": r"^(.+)$"
-            }
+            "standard": {"title": r"^(.+)$", "sections": r"^(.+)$"},
         }
 
     def _load_model(self):
@@ -67,7 +64,9 @@ class KIEExtractor:
 
             if self.model:
                 # Use LayoutLMv3 for KIE
-                key_value_pairs = await self._layoutlm3_extract(text_results, document_type)
+                key_value_pairs = await self._layoutlm3_extract(
+                    text_results, document_type
+                )
                 confidence = 0.8  # High confidence for model-based extraction
             else:
                 # Use rule-based extraction
@@ -80,18 +79,16 @@ class KIEExtractor:
             return KIEResult(
                 key_value_pairs=key_value_pairs,
                 confidence=confidence,
-                entities=entities
+                entities=entities,
             )
 
         except Exception as e:
             logger.error(f"Error in KIE extraction: {str(e)}")
-            return KIEResult(
-                key_value_pairs={},
-                confidence=0,
-                entities=[]
-            )
+            return KIEResult(key_value_pairs={}, confidence=0, entities=[])
 
-    async def _layoutlm3_extract(self, text_results: List[Any], document_type: str) -> Dict[str, Any]:
+    async def _layoutlm3_extract(
+        self, text_results: List[Any], document_type: str
+    ) -> Dict[str, Any]:
         """Placeholder for LayoutLMv3-based KIE"""
         # In a real implementation, this would use LayoutLMv3
         # For now, return empty dict
@@ -113,17 +110,21 @@ class KIEExtractor:
                     key_value_pairs[key] = []
                     for i in range(0, len(matches), 2):
                         if i + 1 < len(matches):
-                            key_value_pairs[key].append({
-                                "name": matches[i].strip(),
-                                "price": matches[i + 1].strip()
-                            })
+                            key_value_pairs[key].append(
+                                {
+                                    "name": matches[i].strip(),
+                                    "price": matches[i + 1].strip(),
+                                }
+                            )
                 else:
                     # For other fields, take first match
                     key_value_pairs[key] = matches[0].strip()
 
         return key_value_pairs
 
-    def _extract_entities(self, text_results: List[Any], key_value_pairs: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _extract_entities(
+        self, text_results: List[Any], key_value_pairs: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """Extract named entities from text"""
         entities = []
 
@@ -131,48 +132,38 @@ class KIEExtractor:
         for key, value in key_value_pairs.items():
             if isinstance(value, list):
                 for item in value:
-                    entities.append({
-                        "type": f"{key}_item",
-                        "text": str(item),
-                        "confidence": 0.8
-                    })
+                    entities.append(
+                        {"type": f"{key}_item", "text": str(item), "confidence": 0.8}
+                    )
             else:
-                entities.append({
-                    "type": key,
-                    "text": str(value),
-                    "confidence": 0.8
-                })
+                entities.append({"type": key, "text": str(value), "confidence": 0.8})
 
         # Add additional entities based on text content
         for text_result in text_results:
             text = text_result.text
 
             # Email
-            email_match = re.search(r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})', text)
+            email_match = re.search(
+                r"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})", text
+            )
             if email_match:
-                entities.append({
-                    "type": "email",
-                    "text": email_match.group(1),
-                    "confidence": 0.9
-                })
+                entities.append(
+                    {"type": "email", "text": email_match.group(1), "confidence": 0.9}
+                )
 
             # Phone number
-            phone_match = re.search(r'(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})', text)
+            phone_match = re.search(r"(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})", text)
             if phone_match:
-                entities.append({
-                    "type": "phone",
-                    "text": phone_match.group(1),
-                    "confidence": 0.9
-                })
+                entities.append(
+                    {"type": "phone", "text": phone_match.group(1), "confidence": 0.9}
+                )
 
             # Date
-            date_match = re.search(r'(\d{1,2}[\/\-\s]\d{1,2}[\/\-\s]\d{2,4})', text)
+            date_match = re.search(r"(\d{1,2}[\/\-\s]\d{1,2}[\/\-\s]\d{2,4})", text)
             if date_match:
-                entities.append({
-                    "type": "date",
-                    "text": date_match.group(1),
-                    "confidence": 0.8
-                })
+                entities.append(
+                    {"type": "date", "text": date_match.group(1), "confidence": 0.8}
+                )
 
         return entities
 
@@ -188,7 +179,7 @@ class KIEExtractor:
             # Normalize common formats
             if key == "total" and isinstance(value, str):
                 # Remove currency symbols and normalize
-                value = re.sub(r'[$,\s]', '', value)
+                value = re.sub(r"[$,\s]", "", value)
                 try:
                     value = float(value)
                 except:

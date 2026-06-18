@@ -32,7 +32,10 @@ class LayoutDetector:
             except:
                 # Fallback to default model
                 logger.info("Using default DocLayout-YOLO model")
-                self.model = lp.DocLayoutParser("hfutan/LayoutLMv3-doclayout-base", layout_model="hfutan/doclayout-yolo")
+                self.model = lp.DocLayoutParser(
+                    "hfutan/LayoutLMv3-doclayout-base",
+                    layout_model="hfutan/doclayout-yolo",
+                )
 
             self.model.to(self.device)
             logger.info("Layout detector loaded successfully")
@@ -64,7 +67,7 @@ class LayoutDetector:
                         "width": element.coordinates[2] - element.coordinates[0],
                         "height": element.coordinates[3] - element.coordinates[1],
                         "type": element.type.lower(),
-                        "score": element.score
+                        "score": element.score,
                     }
                     boxes.append(box_data)
 
@@ -78,7 +81,9 @@ class LayoutDetector:
 
                 # Calculate confidence based on layout confidence scores
                 confidences = [box["score"] for box in boxes]
-                avg_confidence = sum(confidences) / len(confidences) if confidences else 0.5
+                avg_confidence = (
+                    sum(confidences) / len(confidences) if confidences else 0.5
+                )
 
             else:
                 # Fallback: Simple edge-based detection
@@ -87,18 +92,14 @@ class LayoutDetector:
                 avg_confidence = 0.6  # Moderate confidence for fallback
 
             return LayoutDetectionResult(
-                boxes=boxes,
-                confidence=avg_confidence,
-                document_type=document_type
+                boxes=boxes, confidence=avg_confidence, document_type=document_type
             )
 
         except Exception as e:
             logger.error(f"Error in layout detection: {str(e)}")
             # Return minimal layout
             return LayoutDetectionResult(
-                boxes=[],
-                confidence=0.1,
-                document_type="unknown"
+                boxes=[], confidence=0.1, document_type="unknown"
             )
 
     def _simple_layout_detection(self, image_np: np.ndarray) -> List[Dict[str, Any]]:
@@ -111,20 +112,24 @@ class LayoutDetector:
             edges = cv2.Canny(gray, 50, 150)
 
             # Find contours
-            contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            contours, _ = cv2.findContours(
+                edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+            )
 
             boxes = []
             for contour in contours:
                 x, y, w, h = cv2.boundingRect(contour)
                 if w > 20 and h > 20:  # Filter small contours
-                    boxes.append({
-                        "x": x,
-                        "y": y,
-                        "width": w,
-                        "height": h,
-                        "type": "unknown",
-                        "score": 0.5
-                    })
+                    boxes.append(
+                        {
+                            "x": x,
+                            "y": y,
+                            "width": w,
+                            "height": h,
+                            "type": "unknown",
+                            "score": 0.5,
+                        }
+                    )
 
             return boxes
         except:

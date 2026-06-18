@@ -38,7 +38,9 @@ class TextDetector:
             logger.error(f"Error loading text detector: {str(e)}")
             self.model = None
 
-    async def detect(self, image_path: str, layout_boxes: List[Dict[str, Any]] = None) -> TextDetectionResult:
+    async def detect(
+        self, image_path: str, layout_boxes: List[Dict[str, Any]] = None
+    ) -> TextDetectionResult:
         """Detect text in image"""
         try:
             # Load image
@@ -62,16 +64,12 @@ class TextDetector:
             avg_confidence = sum(confidences) / len(confidences) if confidences else 0
 
             return TextDetectionResult(
-                text_blocks=text_boxes,
-                confidence=avg_confidence
+                text_blocks=text_boxes, confidence=avg_confidence
             )
 
         except Exception as e:
             logger.error(f"Error in text detection: {str(e)}")
-            return TextDetectionResult(
-                text_blocks=[],
-                confidence=0
-            )
+            return TextDetectionResult(text_blocks=[], confidence=0)
 
     def _dbnet_detect(self, image_np: np.ndarray) -> List[Dict[str, Any]]:
         """Placeholder for DBNet text detection"""
@@ -84,32 +82,32 @@ class TextDetector:
         import pytesseract
 
         # Configure pytesseract
-        config = '--oem 3 --psm 6'
+        config = "--oem 3 --psm 6"
 
         # Get text data
         data = pytesseract.image_to_data(
-            image_np,
-            config=config,
-            output_type=pytesseract.Output.DICT
+            image_np, config=config, output_type=pytesseract.Output.DICT
         )
 
         # Extract bounding boxes
         boxes = []
-        for i in range(len(data['text'])):
-            if int(data['conf'][i]) > 0:  # Only include confident detections
+        for i in range(len(data["text"])):
+            if int(data["conf"][i]) > 0:  # Only include confident detections
                 box = {
-                    "x": data['left'][i],
-                    "y": data['top'][i],
-                    "width": data['width'][i],
-                    "height": data['height'][i],
-                    "text": data['text'][i],
-                    "confidence": int(data['conf'][i]) / 100  # Convert to 0-1
+                    "x": data["left"][i],
+                    "y": data["top"][i],
+                    "width": data["width"][i],
+                    "height": data["height"][i],
+                    "text": data["text"][i],
+                    "confidence": int(data["conf"][i]) / 100,  # Convert to 0-1
                 }
                 boxes.append(box)
 
         return boxes
 
-    def _filter_by_layout(self, text_boxes: List[Dict[str, Any]], layout_boxes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _filter_by_layout(
+        self, text_boxes: List[Dict[str, Any]], layout_boxes: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """Filter text boxes based on layout regions"""
         filtered_boxes = []
 
@@ -131,5 +129,4 @@ class TextDetector:
         center_x1 = x1 + w1 / 2
         center_y1 = y1 + h1 / 2
 
-        return (x2 <= center_x1 <= x2 + w2 and
-                y2 <= center_y1 <= y2 + h2)
+        return x2 <= center_x1 <= x2 + w2 and y2 <= center_y1 <= y2 + h2

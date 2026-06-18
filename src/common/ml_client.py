@@ -23,12 +23,12 @@ class MLflowClient:
         if artifact_uri and artifact_uri.startswith("http"):
             parsed = self._parse_s3_uri(artifact_uri)
             self.s3_client = boto3.client(
-                's3',
-                endpoint_url=parsed['endpoint'],
-                aws_access_key_id=parsed['key'],
-                aws_secret_access_key=parsed['secret']
+                "s3",
+                endpoint_url=parsed["endpoint"],
+                aws_access_key_id=parsed["key"],
+                aws_secret_access_key=parsed["secret"],
             )
-            self.bucket = parsed['bucket']
+            self.bucket = parsed["bucket"]
         else:
             self.s3_client = None
 
@@ -40,10 +40,10 @@ class MLflowClient:
         bucket = parts[1] if len(parts) > 1 else ""
 
         return {
-            'endpoint': endpoint,
-            'bucket': bucket,
-            'key': os.getenv('AWS_ACCESS_KEY_ID', 'minioadmin'),
-            'secret': os.getenv('AWS_SECRET_ACCESS_KEY', 'minioadmin')
+            "endpoint": endpoint,
+            "bucket": bucket,
+            "key": os.getenv("AWS_ACCESS_KEY_ID", "minioadmin"),
+            "secret": os.getenv("AWS_SECRET_ACCESS_KEY", "minioadmin"),
         }
 
     def get_latest_model(self, model_name: str, stage: str = "Production") -> str:
@@ -52,10 +52,7 @@ class MLflowClient:
         model_versions = client.search_model_versions(f"name='{model_name}'")
 
         # Filter by stage
-        production_versions = [
-            v for v in model_versions
-            if v.current_stage == stage
-        ]
+        production_versions = [v for v in model_versions if v.current_stage == stage]
 
         if not production_versions:
             raise ValueError(f"No production model found for {model_name}")
@@ -77,8 +74,9 @@ class MLflowClient:
             logger.error(f"Error loading model: {str(e)}")
             raise
 
-    def log_model_metrics(self, experiment_name: str, metrics: Dict[str, Any],
-                         artifact_path: str = None):
+    def log_model_metrics(
+        self, experiment_name: str, metrics: Dict[str, Any], artifact_path: str = None
+    ):
         """Log metrics to MLflow"""
         with mlflow.start_run(experiment_name=experiment_name):
             for key, value in metrics.items():
@@ -97,10 +95,10 @@ class MinIOClient:
 
         # Initialize S3 client
         self.s3_client = boto3.client(
-            's3',
+            "s3",
             endpoint_url=f"http://{endpoint}",
             aws_access_key_id=access_key,
-            aws_secret_access_key=secret_key
+            aws_secret_access_key=secret_key,
         )
 
         # Create bucket if it doesn't exist
@@ -111,7 +109,7 @@ class MinIOClient:
         try:
             self.s3_client.head_bucket(Bucket=self.bucket)
         except ClientError as e:
-            if e.response['Error']['Code'] == '404':
+            if e.response["Error"]["Code"] == "404":
                 # Bucket doesn't exist, create it
                 self.s3_client.create_bucket(Bucket=self.bucket)
                 logger.info(f"Created bucket: {self.bucket}")
@@ -129,11 +127,7 @@ class MinIOClient:
                 relative_path = os.path.relpath(local_file, local_path)
                 s3_path = os.path.join(s3_key, relative_path).replace("\\", "/")
 
-                self.s3_client.upload_file(
-                    local_file,
-                    self.bucket,
-                    s3_path
-                )
+                self.s3_client.upload_file(local_file, self.bucket, s3_path)
 
         logger.info(f"Uploaded model {model_name} v{version} to MinIO")
         return f"s3://{self.bucket}/{s3_key}"
@@ -146,27 +140,17 @@ class MinIOClient:
         os.makedirs(local_path, exist_ok=True)
 
         # List all objects in the prefix
-        objects = self.s3_client.list_objects_v2(
-            Bucket=self.bucket,
-            Prefix=s3_key
-        )
+        objects = self.s3_client.list_objects_v2(Bucket=self.bucket, Prefix=s3_key)
 
         # Download each file
-        for obj in objects.get('Contents', []):
-            s3_path = obj['Key']
-            local_file = os.path.join(
-                local_path,
-                s3_path.replace(s3_key, "")
-            )
+        for obj in objects.get("Contents", []):
+            s3_path = obj["Key"]
+            local_file = os.path.join(local_path, s3_path.replace(s3_key, ""))
 
             # Create subdirectories if needed
             os.makedirs(os.path.dirname(local_file), exist_ok=True)
 
-            self.s3_client.download_file(
-                self.bucket,
-                s3_path,
-                local_file
-            )
+            self.s3_client.download_file(self.bucket, s3_path, local_file)
 
         logger.info(f"Downloaded model {model_name} v{version} from MinIO")
 
@@ -175,14 +159,11 @@ class MinIOClient:
         models = {}
 
         # List all model directories
-        response = self.s3_client.list_objects_v2(
-            Bucket=self.bucket,
-            Prefix="models/"
-        )
+        response = self.s3_client.list_objects_v2(Bucket=self.bucket, Prefix="models/")
 
-        for obj in response.get('Contents', []):
-            key = obj['Key']
-            parts = key.split('/')
+        for obj in response.get("Contents", []):
+            key = obj["Key"]
+            parts = key.split("/")
 
             if len(parts) >= 3:  # models/model-name/version/
                 model_name = parts[1]
